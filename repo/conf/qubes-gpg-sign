@@ -1,0 +1,39 @@
+#!/bin/sh
+set -eu
+
+release="$1"                    # file to sign (exists in the repo VM)
+inrel="${2:-}"                  # path for InRelease.new (may be empty)
+relgpg="${3:-}"                 # path for Release.gpg.new (may be empty)
+
+export QUBES_GPG_DOMAIN="${QUBES_GPG_DOMAIN:-vault}"
+
+WRAP="${WRAP:-/usr/bin/qubes-gpg-client-wrapper}"
+KEY="${REPO_SIGN_KEY:-00AE817C24A10C2540461A9C1D7CDE0234DB458D}"
+
+gpgcmd() {
+  if [ -n "$KEY" ]; then
+    "$WRAP" --batch --no-tty -u "$KEY" "$@"
+  else
+    "$WRAP" --batch --no-tty "$@"
+  fi
+}
+
+mkout() {                       # write stdout to a tmp next to dst, then mv
+  dst="$1"; dir="$(dirname "$dst")"
+  tmp="$(mktemp "$dir/.reprepro.XXXXXX")"
+  cat >"$tmp"
+  mv -f "$tmp" "$dst"
+}
+
+[ -r "$release" ] || { echo "error: $release not readable" >&2; exit 1; }
+umask 022
+
+# InRelease (clearsigned)
+if [ -n "$inrel" ]; then
+  gpgcmd --clearsign <"$release" | mkout "$inrel"
+fi
+
+# Release.gpg (detached, armored)
+if [ -n "$relgpg" ]; then
+  gpgcmd --armor --detach-sign <"$release" | mkout "$relgpg"
+fi

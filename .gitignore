@@ -1,0 +1,5 @@
+build
+repo/db
+repo/dists
+repo/pool
+*.swp

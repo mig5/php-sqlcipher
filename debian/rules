@@ -1,0 +1,126 @@
+#!/usr/bin/make -f
+
+# Keep dh defaults, but the actual builds pass explicit flags
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND = -O2 -fPIC
+
+# Match the shell script layout: build in-tree and use .libs directly
+SQLCIPHER_SRC_DIR := $(CURDIR)/build-sqlcipher
+export SQLITE_LIBS                = $(SQLCIPHER_SRC_DIR)/.libs/
+export SQLCIPHER_LIBDIR_ARG       = $(SQLITE_LIBS)sqlite3.o
+export STANDARD_SQLCIPHER_CFLAGS  = -DSQLITE_HAS_CODEC -DSQLITE_TEMP_STORE=2 -DSQLITE_MAX_VARIABLE_NUMBER=250000 -DSQLITE_EXTRA_INIT=sqlcipher_extra_init -DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown
+export STANDARD_SQLCIPHER_LDFLAGS = -lcrypto -L$(SQLITE_LIBS)
+export SQLITE_CFLAGS              = -I$(SQLCIPHER_SRC_DIR) $(STANDARD_SQLCIPHER_CFLAGS)
+
+# Detect PHP version on the build host
+PHPCONFIG_CANDIDATE := $(shell \
+  if ls -1 /usr/bin/php-config[0-9]* >/dev/null 2>&1; then \
+    ls -1 /usr/bin/php-config[0-9]* | sed 's#.*/##' | sort -Vr | head -n1; \
+  elif command -v php-config >/dev/null 2>&1; then echo php-config; \
+  else echo php-config; fi)
+PHP_VER ?= $(shell $(PHPCONFIG_CANDIDATE) --version 2>/dev/null | awk -F. '{print $$1"."$$2}')
+PHPCONFIG := $(shell if command -v php-config$(PHP_VER) >/dev/null 2>&1; then echo php-config$(PHP_VER); else echo $(PHPCONFIG_CANDIDATE); fi)
+PHPIZE    := $(patsubst php-config%,phpize%,$(PHPCONFIG))
+
+# Extension API dir (e.g. 20240924)
+PHP_API   := $(shell $(PHPCONFIG) --extension-dir | awk -F/ '{print $$NF}')
+
+# Binary package name (must match debian/<package>.php)
+PACKAGE   ?= php$(PHP_VER)-sqlcipher
+
+# Final install path (inside package staging tree)
+EXTDIR     = debian/$(PACKAGE)/usr/lib/php/$(PHP_API)
+
+# Markers to persist paths across recipe lines
+PHP_SRC_MARKER         = .php_src_dir
+SQLITE3_DIR_MARKER     = .sqlite3_dir
+PDO_SQLITE_DIR_MARKER  = .pdo_sqlite_dir
+
+# Figure out the matching Debian source package from the dev tool that owns php-config
+PHP_DEV_PKG := $(shell dpkg-query -S $$(command -v $(PHPCONFIG)) 2>/dev/null | cut -d: -f1 | sed 's/:.*//' | head -n1)
+
+# PDO sources and build dir
+PDO_SRC_DIR  := $(CURDIR)/pdo_sqlcipher
+PDO_BUILD_DIR := $(PDO_SRC_DIR)/build
+
+%:
+	dh $@ --with php
+
+override_dh_auto_build:
+	# 1) Build SQLCipher
+	cd "$(SQLCIPHER_SRC_DIR)" && env -u DEB_BUILD_MAINT_OPTIONS -u DEB_CFLAGS_MAINT_APPEND \
+		CFLAGS="$(STANDARD_SQLCIPHER_CFLAGS)" \
+		LDFLAGS="-lcrypto" \
+		./configure --with-tempstore=yes
+	$(MAKE) -C "$(SQLCIPHER_SRC_DIR)"
+
+	# 2) Check PHP sources are present, set string vars
+	@set -eu; \
+	PHP_SRC_DIR=$$(readlink -f $$(ls -dt php-src/*/ | head -n1 | sed 's#/$$##')); \
+	test -d "$$PHP_SRC_DIR" || { echo "Could not locate extracted php$(PHP_VER) source dir"; ls -al php-src; exit 1; }; \
+	printf '%s' "$$PHP_SRC_DIR" > "$(PHP_SRC_MARKER)"; \
+	SQLITE3_DIR=$$(readlink -f $$(find "$$PHP_SRC_DIR" -type d -path '*/ext/sqlite3' | head -n1)); \
+	test -d "$$SQLITE3_DIR" || { echo "ext/sqlite3 not found under $$PHP_SRC_DIR"; find "$$PHP_SRC_DIR" -maxdepth 4 -type d -name sqlite3; exit 1; }; \
+	printf '%s' "$$SQLITE3_DIR" > "$(SQLITE3_DIR_MARKER)"; \
+	PDO_SQLITE_DIR=$$(readlink -f $$(find "$$PHP_SRC_DIR" -type d -path '*/ext/pdo_sqlite' | head -n1)); \
+	test -d "$$PDO_SQLITE_DIR" || { echo "ext/pdo_sqlite not found under $$PHP_SRC_DIR"; exit 1; }; \
+	printf '%s' "$$PDO_SQLITE_DIR" > "$(PDO_SQLITE_DIR_MARKER)"
+
+	# 2a) Prepare ext/sqlite3 (mv config0.m4, phpize, configure, make)
+	@set -eu; \
+	SQLITE3_DIR=$$(cat "$(SQLITE3_DIR_MARKER)"); \
+	if [ -f "$$SQLITE3_DIR/config0.m4" ] && [ ! -f "$$SQLITE3_DIR/config.m4" ]; then \
+	  mv "$$SQLITE3_DIR/config0.m4" "$$SQLITE3_DIR/config.m4"; \
+	fi; \
+	cd "$$SQLITE3_DIR" && $(PHPIZE); \
+	cd "$$SQLITE3_DIR" && env -u DEB_BUILD_MAINT_OPTIONS -u DEB_CFLAGS_MAINT_APPEND \
+		CFLAGS="$(STANDARD_SQLCIPHER_CFLAGS)" \
+		LDFLAGS="$(STANDARD_SQLCIPHER_LDFLAGS)" \
+		./configure --libdir="$(SQLCIPHER_LIBDIR_ARG)" --with-php-config="$(PHPCONFIG)"
+	$(MAKE) -C "$$(cat "$(SQLITE3_DIR_MARKER)")"
+
+	# Fix the pic_object in sqlite3.lo so it links to sqlcipher's sqlite3.o
+	@set -eu; \
+	PHP_SRC_DIR=$$(cat "$(PHP_SRC_MARKER)"); \
+	sed -i "s|pic_object='.libs/sqlite3.o'|pic_object='.libs/sqlite3.o $(SQLCIPHER_SRC_DIR)/sqlite3.o'|g" \
+		"$$PHP_SRC_DIR/ext/sqlite3/sqlite3.lo"
+
+	# Rebuild the sqlite3 extension after the pic_object fix
+	$(MAKE) -C "$$(cat "$(SQLITE3_DIR_MARKER)")"
+
+	# 3) Build PDO SQLCipher
+	@set -eu; \
+	PDO_SQLITE_DIR=$$(cat "$(PDO_SQLITE_DIR_MARKER)"); \
+	mkdir -p "$(PDO_BUILD_DIR)"; \
+	cp "$$PDO_SQLITE_DIR"/*.c "$$PDO_SQLITE_DIR"/*.h "$(PDO_BUILD_DIR)/"; \
+	# Bring in sqlcipher amalgamation and config for PDO build
+	cp "$(SQLCIPHER_SRC_DIR)/sqlite3.c" "$(PDO_BUILD_DIR)/sqlite3.c"; \
+	cp "$(SQLCIPHER_SRC_DIR)/sqlite3.h" "$(PDO_BUILD_DIR)/sqlite3.h"; \
+	cp "$(SQLCIPHER_SRC_DIR)/sqlite_cfg.h" "$(PDO_BUILD_DIR)/config.h"; \
+	sed -i '1i#include "config.h"' "$(PDO_BUILD_DIR)/sqlite3.c"; \
+	cp "$(PDO_SRC_DIR)/config.m4" "$(PDO_BUILD_DIR)/config.m4"; \
+	cd "$(PDO_BUILD_DIR)" && $(PHPIZE) --clean && $(PHPIZE); \
+	cd "$(PDO_BUILD_DIR)" && env -u DEB_BUILD_MAINT_OPTIONS -u DEB_CFLAGS_MAINT_APPEND \
+		CFLAGS="$(STANDARD_SQLCIPHER_CFLAGS)" \
+		LDFLAGS="$(STANDARD_SQLCIPHER_LDFLAGS)" \
+		./configure --libdir="$(SQLCIPHER_LIBDIR_ARG)" --with-php-config="$(PHPCONFIG)"
+	$(MAKE) -C "$(PDO_BUILD_DIR)"
+
+override_dh_auto_install:
+	@set -eu; \
+	SQLITE3_DIR=$$(cat "$(SQLITE3_DIR_MARKER)"); \
+	install -D -m 0644 "$$SQLITE3_DIR/modules/sqlite3.so" "$(EXTDIR)/sqlite3.so"; \
+	install -D -m 0644 "$(PDO_BUILD_DIR)/modules/pdo_sqlite.so" "$(EXTDIR)/pdo_sqlite.so"; \
+	# Install .ini so dh-php can enable them across SAPIs
+	install -D -m 0644 debian/sqlite3.ini    "debian/$(PACKAGE)/usr/share/$(PACKAGE)/sqlite3/sqlite3.ini"; \
+	install -D -m 0644 debian/pdo_sqlite.ini "debian/$(PACKAGE)/usr/share/$(PACKAGE)/sqlite3/pdo_sqlite.ini"
+
+override_dh_installexamples:
+	dh_installexamples --sourcedir=.
+
+override_dh_missing:
+	dh_missing --fail-missing
+
+override_dh_auto_clean:
+	rm -rf "$(PHP_SRC_MARKER)" "$(SQLITE3_DIR_MARKER)" "$(PDO_SQLITE_DIR_MARKER)"
+

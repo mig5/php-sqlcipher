@@ -1,0 +1,3 @@
+Tests: basic
+Depends: @, ${PHP_BIN}-cli
+Restrictions: allow-stderr

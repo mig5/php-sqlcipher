@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eux
+
+# Sanity: modules must be loaded and report info
+${PHP_BIN} --ri sqlite3
+${PHP_BIN} --ri pdo_sqlite
+
+# Write an encrypted DB
+${PHP_BIN} ${DOC_DIR}/examples/test_sqlcipher.php

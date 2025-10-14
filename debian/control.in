@@ -1,0 +1,28 @@
+Source: ${PKG}
+Section: php
+Priority: optional
+Maintainer: ${MAINT_NAME} <${MAINT_EMAIL}>
+Standards-Version: 4.7.2
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-php,
+ pkg-php-tools,
+ ${PHP_BIN}-dev,
+ libssl-dev,
+ libsqlite3-dev,
+ autoconf, automake, libtool, git
+Rules-Requires-Root: no
+Homepage: https://www.zetetic.net/sqlcipher
+
+Package: ${PKG}
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+ ${php:Depends},
+Provides: ${PHP_BIN}-sqlite3, php-sqlite3
+Replaces: ${PHP_BIN}-sqlite3, php-sqlite3
+Conflicts: ${PHP_BIN}-sqlite3
+Description: SQLite3/SQLCipher module for PHP ${PHP_VER} (drop-in replacement)
+ SQLCipher-enabled build of PHP’s sqlite3 and pdo_sqlite extensions.
+ Acts as a drop-in replacement for ${PHP_BIN}-sqlite3.
