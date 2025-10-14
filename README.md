@@ -107,17 +107,15 @@ You should see this repo as the selected candidate.
 
 ## Option 2: Building your own .debs
 
-If you’d rather build locally, use `scripts/package.sh` which executes the Docker build process.
-
-```bash
-./scripts/package.sh
-```
+If you’d rather build locally, execute `scripts/package.sh` which in turn executes the Docker build process for each distro and PHP version.
 
 See the top of the script for the matrix of PHP versions and distros to build for.
 
 ---
 
 ## Using SQLCipher for PHP
+
+A basic example using two of the SQLCipher PRAGMAs (the `PRAGMA key` is mandatory as the first statement before executing any other SQL statements!):
 
 ```php
 <?php
@@ -198,7 +196,7 @@ Thanks to Zetetic for creating and maintaining SQLCipher, and for keeping it ope
 
 ## Contact / issues
 
-You can contact me via the contact form at https://mig5.net or on GotoSocial ([@mig5@goto.mig5.net](https://goto.mig5.net/@mig5).
+You can contact me via the contact form at https://mig5.net or on GotoSocial ([@mig5@goto.mig5.net](https://goto.mig5.net/@mig5)).
 
  * Are you looking for a contract/freelance sysadmin to help harden and/or maintain your Linux infrastructure, CI/CD workflows or tighten up your security?
  * In the US or Europe and need a senior Linux expert to help mentor your internal team, or handle the night shift?
