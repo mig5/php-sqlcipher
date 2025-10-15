@@ -26,7 +26,7 @@ I build, test and sign these deb packages **locally** using the following:
  * Docker, using the [gvisor/runsc](https://gvisor.dev) hardened runtime.
  * The actual compile and deb build steps occur as an **unprivileged** user in the Docker container, with **no network access**. Network access is only enabled to install the dependencies
  * My Docker daemon runs inside an ephemeral, disposable [QubesOS](https://qubes-os.org) VM that only has port 80/443 access outbound (for apt repositories and git repo cloning). Qubes is a compartmentalised and reasonably-secure operating system.
- * The GPG key that signs the packages is on a Yubikey. The GPG key is accessed by the Qubes VM via a Qubes 'vault' VM across Qubes' backplane - the Qubes VM has no direct access to the key on the filesystem or even to the USB device, except when I'm prompted to sign the package.
+ * The GPG key that signs the packages is on a Yubikey. The GPG key is accessed by the Qubes VM via a Qubes 'vault' VM across Qubes' backplane using Qubes ['split GPG'](https://doc.qubes-os.org/en/latest/user/security-in-qubes/split-gpg.html) - the Qubes VM has no access to the GPG key on the filesystem except when I'm prompted to sign the package.
  * The GPG private key does not exist on the apt repository server or in fact **anywhere** other than on the Yubikey.
  * The signing and apt repo preparation for the built and tested .deb packages, happens in a **separate Qubes VM** to the build machine, that has **no network access** at all.
 
@@ -37,7 +37,7 @@ I consider this reasonably, perhaps even **quite** secure for my use case - but 
 
 I publish the packages I built, in my own apt repository, using the process described above.
 
-However, you have no reason to trust me and my apt repository. This repository exists so that you can build the packages yourself instead. See Option 2 for that.
+However, you have no reason to trust me and my apt repository. This git repo exists so that you can build the packages yourself instead. See Option 2 for that.
 
 ### 1) Add the GPG key (signed-by)
 
@@ -157,7 +157,7 @@ Another technique would be to try and open it with regular SQLite (don't pass `P
 
 * These are drop-in **replacements** of the distro's official PHP `sqlite3`/`pdo_sqlcipher` extensions, just linked to SQLCipher.
 * You should still be able to use regular SQLite3 databases with these packages.
-* You must be on **Ondřej Surý’s PHP packages** to match headers and packaging expectations.
+* You must be using **Ondřej Surý’s PHP packages** to match headers and packaging expectations.
 
 ---
 
