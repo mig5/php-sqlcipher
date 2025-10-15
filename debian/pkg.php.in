@@ -1,2 +1,2 @@
-mod debian/sqlite3.ini
-mod debian/pdo_sqlite.ini
+mod debian/sqlite3.ini priority=20 sapi=all
+mod debian/pdo_sqlite.ini priority=20 sapi=all

@@ -46,6 +46,11 @@ PDO_BUILD_DIR := $(PDO_SRC_DIR)/build
 %:
 	dh $@ --with php
 
+
+override_dh_php:
+	dh_php --php-version=$(PHP_VER)
+
+
 override_dh_auto_build:
 	# 1) Build SQLCipher
 	cd "$(SQLCIPHER_SRC_DIR)" && env -u DEB_BUILD_MAINT_OPTIONS -u DEB_CFLAGS_MAINT_APPEND \
