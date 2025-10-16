@@ -155,7 +155,7 @@ Another technique would be to try and open it with regular SQLite (don't pass `P
 
 ## Notes on compatibility
 
-* These are drop-in **replacements** of the distro's official PHP `sqlite3`/`pdo_sqlcipher` extensions, just linked to SQLCipher.
+* These are drop-in **replacements** of the PHP `sqlite3`/`pdo_sqlite` extensions, just linked to SQLCipher.
 * You should still be able to use regular SQLite3 databases with these packages.
 * You must be using **Ondřej Surý’s PHP packages** to match headers and packaging expectations.
 
@@ -196,7 +196,7 @@ Thanks to Zetetic for creating and maintaining SQLCipher, and for keeping it ope
 
 ## Contact / issues
 
-You can contact me via the contact form at https://mig5.net or on GotoSocial ([@mig5@goto.mig5.net](https://goto.mig5.net/@mig5)).
+You can contact me via the contact form at https://mig5.net or on the Fediverse ([@mig5@goto.mig5.net](https://goto.mig5.net/@mig5)).
 
  * Are you looking for a contract/freelance sysadmin to help harden and/or maintain your Linux infrastructure, CI/CD workflows or tighten up your security?
  * In the US or Europe and need a senior Linux expert to help mentor your internal team, or handle the night shift?
