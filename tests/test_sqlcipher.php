@@ -105,6 +105,18 @@ function cipherIntegrityOk(PDO $dbh): bool {
     return ($row === false);   // no rows == OK
 }
 
+/**
+ * cipher_status returns:
+ *  - 1 (ok)
+ * https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_status
+ */
+function cipherStatus(PDO $dbh): bool {
+    $stmt = $dbh->query("PRAGMA cipher_status;");
+    if (!$stmt) return false;  // query failed -> not OK
+    $row = $stmt->fetch(PDO::FETCH_NUM);
+    return ($row[0] == "1");
+}
+
 // ---------------------------- Main actions ----------------------------
 
 function createAndPopulate(string $path, string $passphrase, string $marker): void {
@@ -127,6 +139,10 @@ function createAndPopulate(string $path, string $passphrase, string $marker): vo
     // Integrity check should be OK (i.e., returns no rows)
     $ok = cipherIntegrityOk($dbh);
     check("cipher_integrity_check", $ok, $ok ? "no rows (OK)" : "reported errors");
+
+    // Status check should be OK (new in 4.12.0 - returns 1 if ok)
+    $ok = cipherStatus($dbh);
+    check("cipher_status", $ok, $ok ? "row result = 1 (OK)" : "reported errors");
 
     // Capture page_size (for entropy sampling)
     $pageSize = (int)(pragmaOne($dbh, "page_size") ?? 4096);
