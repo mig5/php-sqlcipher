@@ -1,0 +1,40 @@
+name: Build PHP PDO SQLCipher packages
+
+on:
+  push:
+
+jobs:
+  build-debs:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian-13-trixie, debian-12-bookworm, ubuntu-22.04, ubuntu-24.04]
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+
+    name: php${{ matrix.php }} on ${{ matrix.os }}
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Debian package
+        uses: ./
+        with:
+          php-version: ${{ matrix.php }}
+          sqlcipher-version: '4.12.0'
+          tz: 'UTC'
+
+      - name: Notify on failure
+        if: ${{ failure() }}
+        env:
+          WEBHOOK_URL: ${{ secrets.NODERED_WEBHOOK_URL }}
+          REPOSITORY: ${{ forgejo.repository }}
+          RUN_NUMBER: ${{ forgejo.run_number }}
+          SERVER_URL: ${{ forgejo.server_url }}
+        run: |
+          curl -X POST \
+               -H "Content-Type: application/json" \
+               -d "{\"repository\":\"$REPOSITORY\",\"run_number\":\"$RUN_NUMBER\",\"status\":\"failure\",\"url\":\"$SERVER_URL/$REPOSITORY/actions/runs/$RUN_NUMBER\"}" \
+               "$WEBHOOK_URL"

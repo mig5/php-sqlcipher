@@ -1,0 +1,123 @@
+name: Build php-pdo-sqlcipher Debian package
+description: Build and test php-pdo-sqlcipher .deb using dpkg-buildpackage + autopkgtest on Debian
+
+inputs:
+  php-version:
+    description: PHP version to build against (e.g. 8.2)
+    default: '8.2'
+  sqlcipher-version:
+    description: SQLCipher tag (without the leading v)
+    default: '4.12.0'
+  tz:
+    description: Timezone
+    default: 'UTC'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up APT and build dependencies
+      shell: bash
+      env:
+        DEBIAN_FRONTEND: noninteractive
+        TZ: ${{ inputs.tz }}
+      run: |
+        set -euo pipefail
+
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          apt-transport-https apt-utils autoconf autopkgtest build-essential \
+          ca-certificates curl dpkg-dev devscripts debhelper dh-php pkg-php-tools \
+          git gnupg pkg-config \
+          libicu-dev libreadline-dev libssl-dev libsqlite3-dev libtool \
+          lintian lsb-release tcl-dev
+
+    - name: Configure PHP APT sources
+      shell: bash
+      env:
+        TZ: ${{ inputs.tz }}
+        DEBIAN_FRONTEND: noninteractive
+        PHP_VER: ${{ inputs.php-version }}
+      run: |
+        set -euo pipefail
+        ./scripts/setup-php-sources.sh
+
+    - name: Install PHP build-deps
+      shell: bash
+      env:
+        DEBIAN_FRONTEND: noninteractive
+        PHP_VER: ${{ inputs.php-version }}
+      run: |
+        set -euo pipefail
+        apt-get update
+        apt-get build-dep -y "php${PHP_VER}"
+
+    - name: Ensure PHP CLI with docs for autopkgtest
+      shell: bash
+      env:
+        DEBIAN_FRONTEND: noninteractive
+        PHP_VER: ${{ inputs.php-version }}
+      run: |
+        set -euo pipefail
+
+        # Make sure docs are not excluded, autopkgtest needs examples
+        rm -f /etc/dpkg/dpkg.cfg.d/docker /etc/dpkg/dpkg.cfg.d/excludes || true
+        printf 'path-include=/usr/share/doc/*\n' > /etc/dpkg/dpkg.cfg.d/01-include-docs
+
+        apt-get update
+        apt-get install -y --no-install-recommends "php${PHP_VER}-cli"
+
+    - name: Fetch upstream sources (sqlcipher, pdo_sqlcipher, PHP)
+      shell: bash
+      env:
+        PHP_VER: ${{ inputs.php-version }}
+        SQLCIPHER_VERSION: ${{ inputs.sqlcipher-version }}
+      run: |
+        set -euo pipefail
+        cd "$FORGEJO_WORKSPACE"
+
+        # match Dockerfile layout in /work/src
+        git clone --branch "v${SQLCIPHER_VERSION}" --depth 1 \
+          https://github.com/sqlcipher/sqlcipher.git build-sqlcipher
+
+        git clone --branch main --depth 1 \
+          https://git.mig5.net/mig5/pdo_sqlcipher.git
+
+        mkdir -p php-src
+        cd php-src
+        apt-get -y source "php${PHP_VER}"
+
+    - name: Render Debian files and build package
+      shell: bash
+      env:
+        PHP_VER: ${{ inputs.php-version }}
+        SQLCIPHER_VERSION: ${{ inputs.sqlcipher-version }}
+      run: |
+        set -euo pipefail
+        cd "$FORGEJO_WORKSPACE"
+
+        umask 022
+        ./scripts/render-debian-files.sh
+
+        dpkg-buildpackage -us -uc -b -rfakeroot
+
+        . /etc/os-release
+        lintian -i -E --pedantic --profile "${ID}" --fail-on error ../*.changes
+
+    - name: Run autopkgtest on built package
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$FORGEJO_WORKSPACE"
+
+        pkg=$(ls -1 ../*.deb | grep -v dbgsym | head -n1)
+        echo "Testing package: $pkg"
+        autopkgtest "$pkg" -- null
+
+    - name: Collect artifacts
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$FORGEJO_WORKSPACE"
+
+        mkdir -p dist
+        cp -a ../*.deb ../*.buildinfo ../*.changes dist/ || true
