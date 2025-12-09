@@ -15,7 +15,7 @@ case "${ID}" in
     curl -fsSL -o /tmp/debsuryorg-archive-keyring.deb \
       https://packages.sury.org/debsuryorg-archive-keyring.deb
     # SHA256SUM matches what https://mirrors.dotsrc.org/deb.sury.org/bind-dev/dists/bullseye/main/binary-amd64/Packages shows
-    echo "d1df4b797498829bb4dbd23de7a88945924a0eac6bce9b6c68e6650c85187f5f /tmp/debsuryorg-archive-keyring.deb" | sha256sum -c -
+    echo "7511384559c9ddf1d5ce5f60be429ae9d4e7d01d9480d6f1b7a30c0810cf8b60 /tmp/debsuryorg-archive-keyring.deb" | sha256sum -c -
     dpkg -i /tmp/debsuryorg-archive-keyring.deb
 
     codename="$(lsb_release -sc)"
