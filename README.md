@@ -39,71 +39,15 @@ I publish the packages I built, in my own apt repository, using the process desc
 
 However, you have no reason to trust me and my apt repository. This git repo exists so that you can build the packages yourself instead. See Option 2 for that.
 
-### 1) Add the GPG key (signed-by)
-
 ```bash
 sudo mkdir -p /usr/share/keyrings
 curl -fsSL https://mig5.net/static/mig5.asc | sudo gpg --dearmor -o /usr/share/keyrings/mig5.gpg
-```
-
-My GPG fingerprint is `00AE817C24A10C2540461A9C1D7CDE0234DB458D`. You can also fetch it from https://keys.openpgp.org or search the fingerprint online to confirm it.
-
-### 2) Add the APT source
-
-**Debian 12 (bookworm):**
-
-```bash
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/mig5.gpg] https://apt.mig5.net bookworm main" | sudo tee /etc/apt/sources.list.d/mig5.list
-```
-
-**Debian 13 (trixie):**
-
-```bash
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/mig5.gpg] https://apt.mig5.net trixie main" | sudo tee /etc/apt/sources.list.d/mig5.list
-```
-
-**Ubuntu 22.04 (jammy):**
-
-```bash
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/mig5.gpg] https://apt.mig5.net jammy main" | sudo tee /etc/apt/sources.list.d/mig5.list
-```
-
-**Ubuntu 24.04 (noble):**
-
-```bash
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/mig5.gpg] https://apt.mig5.net noble main" | sudo tee /etc/apt/sources.list.d/mig5.list
-```
-
-### 3) Update & install
-
-```bash
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/mig5.gpg] https://apt.mig5.net $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/mig5.list
 sudo apt update
-# (example: PHP 8.2)
-sudo apt install php8.2-sqlcipher
+sudo apt install php8.2-sqlcipher # or php8.0-sqlcipher, php7.4-sqlcipher, etc
 ```
 
 > Remember: These packages are built to **replace** `phpX.Y-sqlite3` with a SQLCipher-linked build.
-
-### 4) (Recommended) Pin to prefer this repo for sqlcipher packages
-
-Create `/etc/apt/preferences.d/mig5.pref`:
-
-```ini
-Package: php*-sqlcipher
-Pin: release o=mig5, l=php-sqlcipher, n=bookworm # adjust to your distro
-Pin-Priority: 990
-```
-
-Then:
-
-```bash
-sudo apt update
-apt-cache policy php8.2-sqlcipher
-```
-
-You should see this repo as the selected candidate.
-
----
 
 ## Option 2: Building your own .debs
 
