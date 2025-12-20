@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Space-separated list of PHP major.minor versions to build
-PHPS="${PHPS:-"7.4 8.0 8.1 8.2 8.3 8.4"}"
+PHPS="${PHPS:-"7.4 8.0 8.1 8.2 8.3 8.4 8.5"}"
 
 # Matrix of base images with their distro codenames (image|codename)
 BASE_MATRIX=(

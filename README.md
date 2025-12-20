@@ -8,7 +8,7 @@ This repo contains build scripts and a `reprepro` APT repository for **drop-in r
 
 ## Supported PHP & OS versions
 
-* **PHP:** 7.4, 8.0, 8.1, 8.2, 8.3, 8.4
+* **PHP:** 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5
 * **OS:** Debian **12 (bookworm)**, Debian **13 (trixie)**, Ubuntu **22.04 (jammy)**, Ubuntu **24.04 (noble)**
 
 > **Assumption:** You’re using PHP from [**Ondřej Surý**](https://deb.sury.org) (packages.sury.org / PPA) on both Debian and Ubuntu. If not, you may need to edit the scripts to fetch `apt-get source phpX.Y` differently.
@@ -92,8 +92,6 @@ Look at the `tests/test_sqlcipher.php` script. This performs a battery of tests 
 The test script is used by `autopkgtest` during the build, and can also be found in `/usr/share/doc/phpX.Y-sqlcipher/examples` on a system that has installed the deb package.
 
 Another technique: run `hexdump -C` on the created database. It should show totally scrambled content.
-
-Another technique would be to try and open it with regular SQLite (don't pass `PRAGMA key` as the first query). It should throw an error that it couldn't open the database.
 
 ---
 
