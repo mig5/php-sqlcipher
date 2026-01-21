@@ -7,7 +7,7 @@ inputs:
     default: '8.2'
   sqlcipher-version:
     description: SQLCipher tag (without the leading v)
-    default: '4.12.0'
+    default: '4.13.0'
   tz:
     description: Timezone
     default: 'UTC'
