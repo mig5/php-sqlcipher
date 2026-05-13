@@ -1,6 +1,7 @@
 ${PKG} (${PKG_VERSION}) ${DIST_CODENAME}; urgency=medium
 
-  * Build sqlite3 and pdo_sqlite against SQLCipher.
+  * Build sqlite3 and pdo_sqlite against SQLCipher ${SQLCIPHER_VERSION}.
+  * Build ID: ${BUILD_ID}.
   * Drop-in replacement for php${PHP_VER}-sqlite3.
 
  -- ${MAINT_NAME} <${MAINT_EMAIL}>  ${DATE_RFC2822}

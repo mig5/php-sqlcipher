@@ -27,14 +27,29 @@ if [[ -z "${PKG_VERSION:-}" ]]; then
   else
     PHP_FULL="$(dpkg-query -W -f='${Version}\n' "${PHP_BIN}-dev" 2>/dev/null | sed 's/-.*//;q' || echo "${PHP_VER}.0")"
   fi
-  PKG_VERSION="${PHP_FULL}-1+${DIST_CODENAME}"
+
+  BUILD_ID="${BUILD_ID:-$(date -u +%Y%m%d%H%M%S)}"
+
+  # Debian revision cannot contain hyphens. Keep this conservative.
+  SQLCIPHER_DEB_VER="$(
+    printf '%s' "${SQLCIPHER_VERSION:-unknown}" \
+      | sed -E 's/^[vV]//; s/[^A-Za-z0-9.+~]/./g'
+  )"
+
+  BUILD_ID_DEB="$(
+    printf '%s' "${BUILD_ID}" \
+      | sed -E 's/[^A-Za-z0-9.+~]/./g'
+  )"
+
+  PKG_VERSION="${PHP_FULL}-1+${DIST_CODENAME}.${BUILD_ID_DEB}.sqlcipher${SQLCIPHER_DEB_VER}"
 fi
 
+
 # Export everything envsubst must see
-export PHP_VER PKG PHP_BIN DOC_DIR DIST_CODENAME PKG_VERSION MAINT_NAME MAINT_EMAIL DATE_RFC2822
+export PHP_VER PKG PHP_BIN DOC_DIR DIST_CODENAME PKG_VERSION MAINT_NAME MAINT_EMAIL DATE_RFC2822 SQLCIPHER_VERSION BUILD_ID
 
 # Only substitute the vars we care about
-VARS='${PHP_VER} ${PKG} ${PHP_BIN} ${DOC_DIR} ${DIST_CODENAME} ${PKG_VERSION} ${MAINT_NAME} ${MAINT_EMAIL} ${DATE_RFC2822}'
+VARS='${PHP_VER} ${PKG} ${PHP_BIN} ${DOC_DIR} ${DIST_CODENAME} ${PKG_VERSION} ${MAINT_NAME} ${MAINT_EMAIL} ${DATE_RFC2822} ${SQLCIPHER_VERSION} ${BUILD_ID}'
 
 render() {
   local src="$1" dst="$2"

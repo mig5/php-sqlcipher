@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+SQLCIPHER_VERSION="${SQLCIPHER_VERSION:-4.16.0}"
+
 # Space-separated list of PHP major.minor versions to build
 PHPS="${PHPS:-"7.4 8.0 8.1 8.2 8.3 8.4 8.5"}"
 
@@ -12,6 +14,9 @@ BASE_MATRIX=(
   "ubuntu:24.04|noble"
   "ubuntu:22.04|jammy"
 )
+
+# Unique package rebuild identifier.
+BUILD_ID="${BUILD_ID:-$(date -u +%Y%m%d%H%M%S)}"
 
 # Where to put artifacts on the host
 OUT_DIR="${OUT_DIR:-"$(cd "$(dirname "$0")/.."; pwd)/build"}"
@@ -56,6 +61,8 @@ for entry in "${BASE_MATRIX[@]}"; do
         -f "${DOCKERFILE}" \
         --build-arg "BASE_IMAGE=${BASE_IMAGE}" \
         --build-arg "PHP_VER=${PHP_VER}" \
+        --build-arg "SQLCIPHER_VERSION=${SQLCIPHER_VERSION}" \
+        --build-arg "BUILD_ID=${BUILD_ID}" \
         --progress=plain \
         -t "${TAG}" \
         ${EXTRA_BUILD_ARGS} \
