@@ -138,7 +138,7 @@ Thanks to Zetetic for creating and maintaining SQLCipher, and for keeping it ope
 
 ## Contact / issues
 
-You can contact me via the contact form at https://mig5.net or on the Fediverse ([@mig5@goto.mig5.net](https://goto.mig5.net/@mig5)).
+You can contact me via the contact form at https://mig5.net.
 
  * Are you looking for a contract/freelance sysadmin to help harden and/or maintain your Linux infrastructure, CI/CD workflows or tighten up your security?
  * In the US or Europe and need a senior Linux expert to help mentor your internal team, or handle the night shift?
