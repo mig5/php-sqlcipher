@@ -9,7 +9,7 @@ This repo contains build scripts and a `reprepro` APT repository for **drop-in r
 ## Supported PHP & OS versions
 
 * **PHP:** 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5
-* **OS:** Debian **12 (bookworm)**, Debian **13 (trixie)**, Ubuntu **22.04 (jammy)**, Ubuntu **24.04 (noble)**
+* **OS:** Debian **12 (bookworm)**, Debian **13 (trixie)**, Ubuntu **22.04 (jammy)**, Ubuntu **24.04 (noble)**, Ubuntu **26.04 (resolute)**
 
 > **Assumption:** You’re using PHP from [**Ondřej Surý**](https://deb.sury.org) (packages.sury.org / PPA) on both Debian and Ubuntu. If not, you may need to edit the scripts to fetch `apt-get source phpX.Y` differently.
 
