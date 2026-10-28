@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SQLCIPHER_VERSION="${SQLCIPHER_VERSION:-4.19.0}"
+SQLCIPHER_VERSION="${SQLCIPHER_VERSION:-4.20.0}"
 
 # Space-separated list of PHP major.minor versions to build
 PHPS="${PHPS:-"7.4 8.0 8.1 8.2 8.3 8.4 8.5"}"
